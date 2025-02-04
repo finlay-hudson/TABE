@@ -56,7 +56,7 @@ class VideoDiffusionTrainingDataloaderConfig:
 
 @dataclass
 class VideoDiffusionTrainingConfig:
-    accelerator: AcceleratorConfig = AcceleratorConfig()
+    accelerator: AcceleratorConfig = AcceleratorConfig
     max_train_steps: int = 500
     gradient_accumulation_steps: int = 1
     lr_warmup_steps: int = 100
