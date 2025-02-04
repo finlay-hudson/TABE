@@ -1,0 +1,5 @@
+Download TABE51 Dataset and place/symlink to here. If you don't want to change runtime config paths.
+├── TABE-51  
+│   └── data 
+|       └── *all video names*
+  

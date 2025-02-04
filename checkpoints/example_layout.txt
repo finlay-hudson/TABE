@@ -1,0 +1,19 @@
+Default layout should be (but of course just update paths within src/tabe/configs/runtime_config.py - further instructions in README.md), can just be symlinks.
+├── sam2  
+│   └── sam2_hiera_large.pt  
+├── cococo  
+│   ├── model_0.pth  
+│   ├── model_1.pth  
+│   ├── model_2.pth  
+│   └── model_3.pth  
+└── stable-diffusion-v1-5-inpainting  
+    ├── feature_extractor  
+    ├── safety_checker  
+    ├── scheduler  
+    ├── text_encoder  
+    ├── tokenizer  
+    ├── unet  
+    ├── vae  
+    ├── config.json  
+    └── model_index.json  
+
