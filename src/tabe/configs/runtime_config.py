@@ -59,7 +59,8 @@ class RuntimeConfig:
     dataset: DatasetTypes = DatasetTypes.CUSTOM
     video_diffusion: VideoDiffusionConfig = VideoDiffusionConfig
     sam_checkpoint: Path = Path("checkpoints/sam2/sam2_hiera_large.pt")
-    video_names: tuple = tuple(["air_hockey_1"])  # Leaving this blank for the TABE-51 dataset means all videos are ran
+    # Leaving this tuple empty, tuple(), for the TABE-51 dataset means all videos are ran
+    video_names: tuple = tuple(["air_hockey_1"])
     use_gt_vis_mask: bool = False  # For TABE-51 dataset, for creating evaluation metrics this must be False
     use_gt_occlusion: bool = False  # For TABE-51 dataset, for creating evaluation metrics this must be False
     use_gt_bboxes: bool = False  # For TABE-51 dataset, for creating evaluation metrics this must be False
