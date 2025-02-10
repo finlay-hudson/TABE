@@ -4,7 +4,7 @@
 
 University of York 
 
-[Paper](https://arxiv.org/pdf/2411.19210) | [Project Page](https://finlay-hudson.github.io/tabe/) | [TABE-51 Dataset - COMING SOON]() | [TABE-51 Dataset Generation Code](https://github.com/finlay-hudson/TABE51-generation)
+[Paper](https://arxiv.org/pdf/2411.19210) | [Project Page](https://finlay-hudson.github.io/tabe/) | [TABE-51 Dataset](https://drive.google.com/file/d/1q5u8aqCt2lZUYVb1M9XuveSi7U1EGP7G/view?usp=sharing) | [TABE-51 Dataset Generation Code](https://github.com/finlay-hudson/TABE51-generation)
 
 ![TABE-51_results.gif](assets/TABE-51_results.gif)
 ## Setup
@@ -73,7 +73,7 @@ Example of this structure shown in: examples/
 Update `DataConfig.output_root` to be the directory for model predictions to be saved (default: `outputs`)
 Trained models will also be saved here if `VideoDiffusionTrainingConfig.no_cache` is set to `False`, we default this to `True` however as these models take a good amount of space!
 
-For running TABE51 dataset, set:
+For running TABE51 dataset, download data from [here](https://drive.google.com/file/d/1q5u8aqCt2lZUYVb1M9XuveSi7U1EGP7G/view?usp=sharing) and set:
 - `RuntimeConfig.dataset` to `DatasetTypes.TABE51`
 - `DataConfigTABE.data_root`. To be the root directory of TABE51, should end with `data` directory
 
