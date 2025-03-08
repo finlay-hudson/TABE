@@ -12,6 +12,24 @@ from src.tabe.utils.occlusion_utils import OcclusionLevel, map_occlusion_levels,
 from src.tabe.utils.run_utils import setup
 
 
+def get_mean_std_over_runs(results_per_run):
+    # Metrics to compute
+    metrics = ['mIOU', 'mIOUffo', 'mIOUfo', 'mIOUocc']
+
+    # Compute statistics for each metric
+    results = {}
+    for metric in metrics:
+        values = [results_per_run[gen][metric] for gen in results_per_run.keys()]
+
+        mean_value = np.mean(values)
+        std_value = np.std(values, ddof=1)  # Sample standard deviation
+        sem_value = std_value / np.sqrt(len(values))  # Standard error of the mean
+
+        results[metric] = {'mean': mean_value, 'std': std_value, 'sem': sem_value}
+
+    return results
+
+
 def get_iou_results(exp_pred_masks: np.ndarray, gt_amodal_masks: np.ndarray, gt_vis_masks: np.ndarray,
                     gt_occlusion_info: list[OcclusionInfo]):
     num_generations = exp_pred_masks.shape[0]
@@ -28,18 +46,12 @@ def get_iou_results(exp_pred_masks: np.ndarray, gt_amodal_masks: np.ndarray, gt_
     for gen in range(num_generations):
         ious = all_ious[gen]
         non_vis_ious = all_non_vis_iou[gen]
-        iou_res[f"gen: {gen}"] = {"fully_occluded": ious[fully_occluded_frames].mean(),
-                                  "occluded": ious[any_occluded_frames].mean(),
-                                  "non_visible_pixels": non_vis_ious[frames_with_non_vis_frames].mean()}
-
-    best_tte_masks = []
-    for i, best_idx in enumerate(all_ious.argmax(0)):
-        best_tte_masks.append(exp_pred_masks[best_idx, i])
-    best_tte_masks = np.array(best_tte_masks)
-    best_tte_non_vis_iou = get_non_vis_iou(best_tte_masks, gt_amodal_masks, gt_vis_masks)
-    iou_res[f"BEST"] = {"fully_occluded": all_ious.max(0)[fully_occluded_frames].mean(),
-                        "occluded": all_ious.max(0)[any_occluded_frames].mean(),
-                        "non_visible_pixels": best_tte_non_vis_iou[frames_with_non_vis_frames].mean()}
+        iou_res[f"gen: {gen}"] = {
+            "mIOU": ious.mean(),
+            "mIOUffo": ious[fully_occluded_frames].mean(),
+            "mIOUfo": ious[any_occluded_frames].mean(),
+            "mIOUocc": non_vis_ious[frames_with_non_vis_frames].mean()
+        }
 
     return iou_res
 
@@ -75,6 +87,12 @@ def main(runtime_config: RuntimeConfig, vid_names: tuple):
     print("\n")
     pprint(mean_values_across_videos)
     print("\n")
+
+    mean_std_res = get_mean_std_over_runs(mean_values_across_videos)
+    # Print results in mean ± error format
+    for metric, stats in mean_std_res.items():
+        print(f"{metric}: {stats['mean']:.4f} ± {stats['std']:.4f} (Std Dev)")
+        print(f"{metric}: {stats['mean']:.4f} ± {stats['sem']:.4f} (SEM)\n")
 
 
 if __name__ == "__main__":
