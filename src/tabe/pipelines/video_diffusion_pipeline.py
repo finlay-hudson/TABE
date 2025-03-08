@@ -37,7 +37,8 @@ class VideoDiffusionPipeline:
     def _load_components(self):
         # For now we just load the components onto the cpu so we can put on gpu when required
         self.noise_scheduler = DDIMScheduler(**OmegaConf.to_container(self.cfg["noise_scheduler_kwargs"]))
-        self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae")
+        self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae",
+                                                 use_safetensors=False)
         self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="tokenizer")
         self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="text_encoder")
         self.unet = UNet3DConditionModel.from_pretrained_2d(
