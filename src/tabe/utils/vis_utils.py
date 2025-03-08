@@ -85,8 +85,7 @@ class Visualiser:
                                    overlay_mask_over_image(im, mask, color=self.pred_mask_col)])
             Image.fromarray(conc).save(out_dir_final_outputs_vis_frames / f"{frame_num}.jpg")
 
-    def visualise(self, outputs: GenerationOutputs, gt_amodal_masks: Optional[np.ndarray] = None,
-                  output_extra_vis: bool = True) -> None:
+    def visualise(self, outputs: GenerationOutputs, output_extra_vis: bool = True) -> None:
         n_vids_generated = outputs.masks.shape[0]
         print("Making final outputs vis")
         for vid_num in range(n_vids_generated):
@@ -101,7 +100,7 @@ class Visualiser:
 
             for vid_num in range(n_vids_generated):
                 self._visualise_masks(outputs.debugs.ims, outputs.debugs.vis_mask,
-                                      outputs.debugs.pred_masks[vid_num], gt_amodal_masks, vid_num)
+                                      outputs.debugs.pred_masks[vid_num], outputs.debugs.gt_amodal_masks, vid_num)
 
 
 def overlay_mask_over_image(image: np.ndarray, mask: np.ndarray, alpha: float = 0.5,

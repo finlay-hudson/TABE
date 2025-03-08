@@ -117,6 +117,7 @@ class VideoMaskGenerationPipeline:
                                      gen_frames=all_gen_frames,
                                      gen_input_ims=all_input_ims,
                                      gen_input_masks=all_input_masks,
+                                     gt_amodal_masks=gt_amodal_masks
                                  ))
 
     def _output_checker(self, all_pred_masks: np.ndarray, occlusion_info: List[OcclusionLevel]):

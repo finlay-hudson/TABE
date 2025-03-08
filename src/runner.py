@@ -41,7 +41,7 @@ def _run(cfg: RuntimeConfig, ds_cls: TABEDataset | CustomDataset, vid_names) -> 
         outputs = generation_pipeline(all_ims_pil, query_mask, gt_vis_masks, gt_occlusion, gt_amodal_masks)
 
         visualiser = Visualiser(vis_out_dir)
-        visualiser.visualise(outputs, gt_amodal_masks)
+        visualiser.visualise(outputs)
 
         # If we have ground truth information we can run IoU evaluation
         if gt_amodal_masks is not None and gt_occlusion is not None and gt_vis_masks is not None:
