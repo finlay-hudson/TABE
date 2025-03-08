@@ -79,6 +79,7 @@ def convert_one_to_three_channel(img):
 
 
 def convert_masks_to_correct_format(masks):
+    masks = masks.astype(np.uint8)
     if masks.ndim == 4:
         masks = masks[..., 0]  # Convert to a single channel
     if masks.max() <= 1:
