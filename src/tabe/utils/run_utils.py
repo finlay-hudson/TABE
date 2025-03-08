@@ -1,6 +1,8 @@
 from omegaconf import OmegaConf
 from typing import Optional
 
+import numpy as np
+from PIL import ImageOps
 import torch
 
 from src.tabe.configs.runtime_config import RuntimeConfig
@@ -32,3 +34,16 @@ def setup(exp_name: Optional[str] = None, just_eval: bool = False):
         ds_cls = get_gt_data_cls(ds_type, cfg.data)
 
     return cfg, ds_cls, vid_names
+
+
+def pad_inputs(all_ims_pil, vis_masks, np_ims, gt_amodal_masks, monodepth_results, pad=150):
+    all_ims_pil = [ImageOps.expand(im, border=pad, fill=(255, 255, 255)) for im in all_ims_pil]
+    vis_masks = np.pad(vis_masks, ((0, 0), (pad, pad), (pad, pad)), mode='constant', constant_values=0)
+    np_ims = np.pad(np_ims, ((0, 0), (pad, pad), (pad, pad), (0, 0)), mode='constant', constant_values=255)
+    if gt_amodal_masks is not None:
+        gt_amodal_masks = np.pad(gt_amodal_masks, ((0, 0), (pad, pad), (pad, pad)), mode='constant', constant_values=0)
+
+    for md_res in monodepth_results:
+        md_res["depth"] = ImageOps.expand(md_res["depth"], border=pad, fill=255)
+
+    return all_ims_pil, vis_masks, np_ims, gt_amodal_masks, monodepth_results

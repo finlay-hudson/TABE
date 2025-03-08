@@ -67,3 +67,4 @@ class RuntimeConfig:
     or_orig_vis_mask: bool = True
     seed: int = 42
     added_bbox_perc: int = 0  # If there is any extension wanted on predicted bounding boxes
+    img_padding: int = 0  # Pixels of padding for the images if predictions are wanted to go beyond the frame limit
