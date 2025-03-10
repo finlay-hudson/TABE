@@ -37,7 +37,8 @@ class VideoDiffusionPipeline:
     def _load_components(self):
         # For now we just load the components onto the cpu so we can put on gpu when required
         self.noise_scheduler = DDIMScheduler(**OmegaConf.to_container(self.cfg["noise_scheduler_kwargs"]))
-        self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae")
+        self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae",
+                                                 use_safetensors=False)
         self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="tokenizer")
         self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="text_encoder")
         self.unet = UNet3DConditionModel.from_pretrained_2d(
@@ -63,7 +64,7 @@ class VideoDiffusionPipeline:
         self.unet.load_state_dict(state_dict2, strict=False)
 
     def _create_infer_inputs(self, ims, vis_masks, occlusion_info, estimated_bboxes, monodepth_results,
-                             min_mask_points=250, added_bbox_perc=0):
+                             min_mask_points=250, added_bbox_perc=0, img_padding=False):
         assert len(ims) == len(vis_masks) == len(occlusion_info) == len(estimated_bboxes) == len(monodepth_results)
         input_ims, input_masks = [], []
         for im, v_mask, occl_info, e_bbox, md in zip(ims, vis_masks, occlusion_info, estimated_bboxes,
@@ -79,17 +80,20 @@ class VideoDiffusionPipeline:
                                                                             in_front_obj_and_psuedo_bbox,
                                                                             resolution=self.cfg["resolution"],
                                                                             min_mask_points=min_mask_points)
-            # we dont want outpainting on non occluded frames
-            if occl_info in [OcclusionLevel.NO_OCCLUSION, OcclusionLevel.NONE]:
+            # we dont want outpainting on non occluded frames unless there is image padding
+            no_gens = {OcclusionLevel.NO_OCCLUSION, OcclusionLevel.NONE} if not img_padding else {
+                OcclusionLevel.NO_OCCLUSION}
+            if occl_info in no_gens:
                 input_mask = Image.fromarray(np.zeros_like(input_mask))
             input_ims.append(input_img)
             input_masks.append(input_mask)
 
         return input_ims, input_masks
 
-    def run_infer(self, ims, vis_masks, occlusion_info, estimated_bboxes, monodepth_results, sam_checkpoint):
+    def run_infer(self, ims, vis_masks, occlusion_info, estimated_bboxes, monodepth_results, sam_checkpoint,
+                  image_padding=False):
         input_ims, input_masks = self._create_infer_inputs(ims, vis_masks, occlusion_info, estimated_bboxes,
-                                                           monodepth_results)
+                                                           monodepth_results, img_padding=image_padding)
         infer_pipe = AnimationInpaintPipeline(self.vae, self.text_encoder, self.tokenizer, self.unet,
                                               self.noise_scheduler)
         infer_pipe.to(self.device)

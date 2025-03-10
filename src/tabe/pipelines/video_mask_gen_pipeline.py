@@ -13,6 +13,7 @@ from src.tabe.modules.visible_masks import predict_visible_masks
 from src.tabe.modules.occlusion_predictor import predict_occlusion
 from src.tabe.utils.occlusion_utils import map_occlusion_levels, OcclusionInfo, OcclusionLevel
 from src.tabe.utils.bbox_utils import add_h_w_perc_to_bbox
+from src.tabe.utils.run_utils import pad_inputs
 
 
 @dataclass
@@ -26,6 +27,7 @@ class ExtraGenerationOutputs:
     gen_frames: np.ndarray  # n_gen_videos, n_frames, h, w, 3
     gen_input_ims: np.ndarray  # n_frames, res, res, 3
     gen_input_masks: np.ndarray  # n_frames, res, res
+    gt_amodal_masks: Optional[np.ndarray]  # n_frames, h, w
 
 
 @dataclass
@@ -59,11 +61,20 @@ class VideoMaskGenerationPipeline:
         occlusion_info_with_amounts = self._get_pipeline_occlusion_levels(gt_occlusion, monodepth_results, np_ims,
                                                                           vis_masks)
         occlusion_levels = [occl.level for occl in occlusion_info_with_amounts]
-        estimated_bboxes = self._get_pipeline_estimated_bboxes(gt_amodal_masks, monodepth_results, occlusion_levels,
-                                                               vis_masks)
 
         # Train the diffusion model
         self.init_trained_models(all_ims_pil, vis_masks, occlusion_info_with_amounts)
+
+        # Now for inference
+        # Pad the inputs if required
+        if self.cfg.img_padding > 0:
+            all_ims_pil, vis_masks, np_ims, gt_amodal_masks, monodepth_results = pad_inputs(all_ims_pil, vis_masks,
+                                                                                            np_ims, gt_amodal_masks,
+                                                                                            monodepth_results,
+                                                                                            pad=self.cfg.img_padding)
+
+        estimated_bboxes = self._get_pipeline_estimated_bboxes(gt_amodal_masks, monodepth_results, occlusion_levels,
+                                                               vis_masks)
 
         # Inference
         chunks = self._chunk_video_for_inference(occlusion_levels)
@@ -85,7 +96,8 @@ class VideoMaskGenerationPipeline:
                                                                                            c_occlusion,
                                                                                            c_estimated_bboxes,
                                                                                            c_monodepth_results,
-                                                                                           self.cfg.sam_checkpoint)
+                                                                                           self.cfg.sam_checkpoint,
+                                                                                           self.cfg.img_padding > 0)
             for i in range(len(gen_masks)):
                 for j, c in enumerate(chunk):
                     all_pred_masks[i][c] = gen_masks[i][j]
@@ -117,6 +129,7 @@ class VideoMaskGenerationPipeline:
                                      gen_frames=all_gen_frames,
                                      gen_input_ims=all_input_ims,
                                      gen_input_masks=all_input_masks,
+                                     gt_amodal_masks=gt_amodal_masks
                                  ))
 
     def _output_checker(self, all_pred_masks: np.ndarray, occlusion_info: List[OcclusionLevel]):
