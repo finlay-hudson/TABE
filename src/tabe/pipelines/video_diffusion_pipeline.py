@@ -9,6 +9,7 @@ import math
 import numpy as np
 from PIL import Image
 import torch
+from tqdm import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from src.tabe.configs.video_diffusion_config import VideoDiffusionConfig
@@ -19,6 +20,7 @@ from src.tabe.modules.mask_from_gen_vid import create_masks_from_gen_vid
 from src.tabe.modules.video_diffusion import make_video_diffusion_outpainting_inputs, run_video_diffusion_infer, \
     prepare_diffusion_train, train_video_diffusion
 from src.tabe.utils.bbox_utils import draw_psuedo_bbox_on_input
+from src.tabe.utils.general_utils import suppress_output
 from src.tabe.utils.occlusion_utils import OcclusionLevel, OcclusionInfo
 from src.tabe.utils.torch_utils import str_to_torch_dtype
 from third_party.COCOCO.cococo.models.unet import UNet3DConditionModel
@@ -35,19 +37,36 @@ class VideoDiffusionPipeline:
         self.model_out_dir = model_out_dir
 
     def _load_components(self):
-        # For now we just load the components onto the cpu so we can put on gpu when required
-        self.noise_scheduler = DDIMScheduler(**OmegaConf.to_container(self.cfg["noise_scheduler_kwargs"]))
-        self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae",
-                                                 use_safetensors=False)
-        self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="text_encoder")
-        self.unet = UNet3DConditionModel.from_pretrained_2d(
-            self.cfg.sd_inpainting_model_path, subfolder="unet",
-            unet_additional_kwargs=OmegaConf.to_container(self.cfg.unet_additional_kwargs)
-        )
-        self.vae = self.vae.half().eval()
-        self.text_encoder = self.text_encoder.half().eval()
-        self.unet = self.unet.half().eval()
+        with tqdm(total=5, desc="Loading components") as pbar:
+            pbar.set_description("Loading noise scheduler")
+            # For now we just load the components onto the cpu so we can put on gpu when required
+            self.noise_scheduler = DDIMScheduler(**OmegaConf.to_container(self.cfg["noise_scheduler_kwargs"]))
+            pbar.update(1)
+
+            pbar.set_description("Loading VAE")
+            self.vae = AutoencoderKL.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="vae",
+                                                     use_safetensors=False)
+            self.vae = self.vae.half().eval()
+            pbar.update(1)
+
+            pbar.set_description("Loading tokenizer")
+            self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.sd_inpainting_model_path, subfolder="tokenizer")
+            pbar.update(1)
+
+            pbar.set_description("Loading text encoder")
+            self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.sd_inpainting_model_path,
+                                                              subfolder="text_encoder")
+            self.text_encoder = self.text_encoder.half().eval()
+            pbar.update(1)
+
+            pbar.set_description("Loading UNet")
+            with suppress_output():
+                self.unet = UNet3DConditionModel.from_pretrained_2d(
+                    self.cfg.sd_inpainting_model_path, subfolder="unet",
+                    unet_additional_kwargs=OmegaConf.to_container(self.cfg.unet_additional_kwargs)
+                )
+            self.unet = self.unet.half().eval()
+            pbar.update(1)
 
     def _load_cococo_weights(self, cococo_unet_weights_path: Path, device: torch.device) -> None:
         state_dict = {}
@@ -102,11 +121,12 @@ class VideoDiffusionPipeline:
                                                       n_rounds=self.cfg["num_vids_to_generate"],
                                                       n_steps=self.cfg["n_infer_steps"], generator=None,
                                                       seed=self.cfg["seed"], resolution=self.cfg["resolution"])
-        infer_pipe.to("cpu")
+        del infer_pipe
+        torch.cuda.empty_cache()
+
         all_gen_masks = []
         sam_pred = get_sam2_predictor(checkpoint=sam_checkpoint, device=self.device)
         for i, vid in enumerate(all_generated_ims):
-            # sam_pred = get_sam2_predictor(checkpoint=sam_checkpoint, device=self.device)
             all_gen_masks.append(create_masks_from_gen_vid(vid, vis_masks, ims, occlusion_info, sam_pred=sam_pred,
                                                            resize_to=ims[0].size))
 
