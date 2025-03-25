@@ -88,9 +88,6 @@ def run_video_diffusion_infer(infer_pipe: AnimationInpaintPipeline, imgs: list |
 
         all_vis_videos.append((255.0 * vis_videos.cpu().detach().numpy()).astype(np.uint8))
 
-    infer_pipe.to("cpu")
-    torch.cuda.empty_cache()
-
     return all_vis_videos
 
 

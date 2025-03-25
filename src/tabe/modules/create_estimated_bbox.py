@@ -3,6 +3,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
+from src.tabe.modules.components.monodepth import get_vals_in_front_of_obj
 from src.tabe.utils.bbox_utils import calc_bbox_area
 from src.tabe.utils.mask_utils import get_bbox_from_binary_mask
 from src.tabe.utils.occlusion_utils import OcclusionLevel
@@ -175,13 +176,7 @@ def estimate_bboxes(masks: np.ndarray, occlusion_info: list[OcclusionLevel], mon
             estimated_bbox_xyxy[frame_num] = prev_estimated_bbox
             continue
         vis_bbox = bbox_info[frame_num][0]
-        depth_img = monodepth_results[frame_num]["depth"]
-        depth_img_arr = np.array(depth_img)
-        depth_vals_for_object = depth_img_arr[masks[frame_num] == 1]
-        avg_depth_val = depth_vals_for_object.mean()
-        in_front_obj = np.zeros_like(depth_img_arr)
-        in_front_obj[depth_img_arr > avg_depth_val] = 255
-        in_front_obj[masks[frame_num] == 1] = 127
+        in_front_obj = get_vals_in_front_of_obj(masks[frame_num], monodepth_results[frame_num])
         if bbox_info[frame_num][0] is not None and does_curr_bbox_provide_enough_info(vis_bbox):
             # If we have any sort of mask, even if its leaving scene it can help us map the motion of the object
             bbox_corners_prev = get_corners_from_xyxy_bbox(prev_estimated_bbox)
