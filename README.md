@@ -88,7 +88,6 @@ _ Additional optional extra data configs are found in `src/tabe/configs/runtime_
 ## Running
 ### Run the example
 
-[//]: # (TODO if they cant train the model - provide pretrained weights for this video)
 We provide a short example video from our TABE51 dataset, to showcase running on a video with a single query mask.
 To run the example, set:
 - `RuntimeConfig.dataset` to `DatasetTypes.CUSTOM`
